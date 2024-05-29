@@ -33,6 +33,7 @@ def check_password():
         if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # Don't store the password.
+            st.toast("Login Successful 🎉", icon="🔓")
         else:
             st.session_state["password_correct"] = False
 
@@ -51,8 +52,6 @@ def check_password():
 
 if not check_password():
     st.stop()
-else:
-    st.toast("Login Successful 🎉", icon="🔓")
 
 # File upload
 file = st.file_uploader("Upload a CSV or TSV file", type=["zip"])
