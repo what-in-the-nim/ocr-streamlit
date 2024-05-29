@@ -8,6 +8,10 @@ from functools import partial
 import pandas as pd
 import streamlit as st
 
+# Set the website bar icon
+st.set_page_config(page_title="Label Editor", page_icon=":pencil:")
+st.title("Label Editor")
+
 
 def image_to_data_url(zip_file: zipfile.ZipFile, image_path: str) -> str:
     """Open an image and convert to base64 data url."""
@@ -47,9 +51,8 @@ def check_password():
 
 if not check_password():
     st.stop()
-
-
-st.title("Label Editor")
+else:
+    st.toast("Login Successful 🎉", icon="🔓")
 
 # File upload
 file = st.file_uploader("Upload a CSV or TSV file", type=["zip"])
