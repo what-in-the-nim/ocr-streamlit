@@ -1,4 +1,5 @@
 import base64
+import hmac
 import io
 import os.path as op
 import zipfile
@@ -18,6 +19,34 @@ def image_to_data_url(zip_file: zipfile.ZipFile, image_path: str) -> str:
     # Generate data url.
     data_url = f"data:image/{image_extension};base64,{encoded_image}"
     return data_url
+
+
+def check_password():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
+        else:
+            st.session_state["password_correct"] = False
+
+    # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password.
+    st.text_input(
+        "Password", type="password", on_change=password_entered, key="password"
+    )
+    if "password_correct" in st.session_state:
+        st.error("😕 Password incorrect")
+    return False
+
+
+if not check_password():
+    st.stop()
 
 
 st.title("Label Editor")
@@ -77,7 +106,9 @@ df["image"] = df["path"].apply(lambda x: op.join(root_dir, x))
 # Check if the image path exists
 for image_path in df["image"]:
     if image_path not in files:
-        st.error(f"Image path '{image_path}' not found in the zip file. This is a corrupted file.")
+        st.error(
+            f"Image path '{image_path}' not found in the zip file. This is a corrupted file."
+        )
         st.stop()
 # Create a base64 data url column
 df["image"] = df["image"].apply(image_to_data_url)
