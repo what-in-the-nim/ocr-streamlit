@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocr-streamlit"
+version = "0.1.0"
+description = "Streamlit application for OCR label screening."
+authors = [
+    { name = "Chatcharin Sangbutsarakum", email = "chatcharinsang@gmail.com" }
+]
+license = { text = "MIT" }
+dependencies = [
+    "streamlit",
+    "pandas",
+]
