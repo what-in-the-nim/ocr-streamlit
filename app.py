@@ -144,7 +144,7 @@ save_filename = label_filename.replace(".", f"_{current_time}.")
 
 # Download button
 st.download_button(
-    label="Download",
+    label="Download Label",
     data=edited_df.to_csv(sep="\t", index=False),
     file_name=save_filename,
     mime="text/csv",
