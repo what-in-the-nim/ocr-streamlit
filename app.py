@@ -40,9 +40,6 @@ files = zip_file.namelist()
 # Remove all __MACOSX and .DS_Store files
 files = [file for file in files if "__MACOSX" not in file and ".DS_Store" not in file]
 
-st.write("Files in the ZIP file:")
-st.write(files)
-
 # Find the tsv file or csv file
 label_files = [file for file in files if file.endswith(".tsv") or file.endswith(".csv")]
 if len(label_files) != 0:
