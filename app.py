@@ -74,6 +74,11 @@ image_to_data_url = partial(image_to_data_url, zip_file)
 
 # Create a temporary path column
 df["image"] = df["path"].apply(lambda x: op.join(root_dir, x))
+# Check if the image path exists
+for image_path in df["image"]:
+    if image_path not in files:
+        st.error(f"Image path '{image_path}' not found in the zip file. This is a corrupted file.")
+        st.stop()
 # Create a base64 data url column
 df["image"] = df["image"].apply(image_to_data_url)
 # Fill NaN with empty string on text column
