@@ -1,13 +1,18 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "ocr-streamlit"
 version = "0.1.0"
 description = "Streamlit application for OCR label screening."
-authors = [
-  { name = "Chatcharin Sangbutsarakum", email = "chatcharinsang@gmail.com" },
-]
-license = { text = "MIT" }
-dependencies = ["streamlit", "pandas"]
+authors = ["Chatcharin Sangbutsarakum <chatcharinsang@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/yourusername/ocr-streamlit"
+repository = "https://github.com/yourusername/ocr-streamlit"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = "*"
+pandas = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
