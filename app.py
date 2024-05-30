@@ -13,23 +13,24 @@ st.set_page_config(page_title="Label Editor", page_icon=":pencil:")
 st.title("Label Editor")
 
 
-@st.cache_data
-def image_to_data_url(zip_file: zipfile.ZipFile, image_path: str) -> str:
-    """Open an image and convert to base64 data url."""
-    # Read image content in zip file.
-    with zip_file.open(image_path) as image_file:
-        encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
-    # Get image path extension.
-    image_extension = image_path.split(".")[-1]
-    # Generate data url.
-    data_url = f"data:image/{image_extension};base64,{encoded_image}"
-    return data_url
 
 @st.cache_data
-def read_dataframe(zip_file: zipfile.ZipFile, file_path: str) -> pd.DataFrame:
+def read_dataframe(_zip_file: zipfile.ZipFile, file_path: str) -> pd.DataFrame:
     """Read a CSV or TSV file in a zip file."""
+    @st.cache_data
+    def image_to_data_url(_zip_file: zipfile.ZipFile, image_path: str) -> str:
+        """Open an image and convert to base64 data url."""
+        # Read image content in zip file.
+        with _zip_file.open(image_path) as image_file:
+            encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
+        # Get image path extension.
+        image_extension = image_path.split(".")[-1]
+        # Generate data url.
+        data_url = f"data:image/{image_extension};base64,{encoded_image}"
+        return data_url
+
     # Get the file content from the zip file
-    with zip_file.open(file_path) as f:
+    with _zip_file.open(file_path) as f:
         label_content = f.read()
         label_bytes = io.BytesIO(label_content)
 
@@ -49,7 +50,7 @@ def read_dataframe(zip_file: zipfile.ZipFile, file_path: str) -> pd.DataFrame:
     root_dir = op.commonpath(files)
 
     # Create a partial function to convert image to data url
-    image_to_data_url = partial(image_to_data_url, zip_file)
+    image_to_data_url = partial(image_to_data_url, _zip_file)
 
     # Create a temporary path column
     df["image"] = df["path"].apply(lambda x: op.join(root_dir, x))
@@ -124,9 +125,19 @@ else:
 
 df = read_dataframe(zip_file, label_file)
 
+# Find all batches in the df["path"] column
+# root_dir/batch_xx/image_xx.jpg
+batches = df["path"].apply(lambda x: x.split("/")[1]).unique().tolist()
+
+# Add batch_xx selection
+batch = st.selectbox("Select a batch", batches)
+
+# Filter the DataFrame by batch
+batch_df = df[df["path"].str.contains(batch)]
+
 # Display DataFrame
 edited_df = st.data_editor(
-    data=df,
+    data=batch_df,
     use_container_width=True,
     num_rows="dynamic",
     column_order=["image", "text"],
@@ -144,9 +155,7 @@ edited_df = st.data_editor(
 edited_df.drop(columns=["image"], inplace=True)
 
 # Edited filename
-current_time = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-label_filename = op.basename(label_file)
-save_filename = label_filename.replace(".", f"_{current_time}.")
+save_filename = f"{batch}_labels.tsv"
 
 # Download button
 st.download_button(
