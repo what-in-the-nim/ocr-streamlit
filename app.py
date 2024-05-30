@@ -13,6 +13,7 @@ st.set_page_config(page_title="Label Editor", page_icon=":pencil:")
 st.title("Label Editor")
 
 
+@st.cache_data
 def image_to_data_url(zip_file: zipfile.ZipFile, image_path: str) -> str:
     """Open an image and convert to base64 data url."""
     # Read image content in zip file.
@@ -23,6 +24,47 @@ def image_to_data_url(zip_file: zipfile.ZipFile, image_path: str) -> str:
     # Generate data url.
     data_url = f"data:image/{image_extension};base64,{encoded_image}"
     return data_url
+
+@st.cache_data
+def read_dataframe(zip_file: zipfile.ZipFile, file_path: str) -> pd.DataFrame:
+    """Read a CSV or TSV file in a zip file."""
+    # Get the file content from the zip file
+    with zip_file.open(file_path) as f:
+        label_content = f.read()
+        label_bytes = io.BytesIO(label_content)
+
+    # Read label file
+    sep = "\t" if label_file.endswith(".tsv") else ","
+    df = pd.read_csv(label_bytes, sep=sep)
+
+    # Check if the file has a path and text column
+    if not {"path", "text"}.issubset(df.columns):
+        st.error(
+            "The file must have 'path' and 'text' columns, but got: "
+            + ", ".join(df.columns)
+        )
+        st.stop()
+
+    # Use commonpath as root.
+    root_dir = op.commonpath(files)
+
+    # Create a partial function to convert image to data url
+    image_to_data_url = partial(image_to_data_url, zip_file)
+
+    # Create a temporary path column
+    df["image"] = df["path"].apply(lambda x: op.join(root_dir, x))
+    # Check if the image path exists
+    for image_path in df["image"]:
+        if image_path not in files:
+            st.error(
+                f"Image path '{image_path}' not found in the zip file. This is a corrupted file."
+            )
+            st.stop()
+    # Create a base64 data url column
+    df["image"] = df["image"].apply(image_to_data_url)
+    # Fill NaN with empty string on text column
+    df["text"] = df["text"].fillna("")
+    return df
 
 
 def check_password():
@@ -80,42 +122,7 @@ else:
     # Use the first file
     label_file = label_files[0]
 
-# Get the file content from the zip file
-with zip_file.open(label_file) as f:
-    label_content = f.read()
-    label_bytes = io.BytesIO(label_content)
-
-# Read label file
-sep = "\t" if label_file.endswith(".tsv") else ","
-df = pd.read_csv(label_bytes, sep=sep)
-
-# Check if the file has a path and text column
-if not {"path", "text"}.issubset(df.columns):
-    st.error(
-        "The file must have 'path' and 'text' columns, but got: "
-        + ", ".join(df.columns)
-    )
-    st.stop()
-
-# Use commonpath as root.
-root_dir = op.commonpath(files)
-
-# Create a partial function to convert image to data url
-image_to_data_url = partial(image_to_data_url, zip_file)
-
-# Create a temporary path column
-df["image"] = df["path"].apply(lambda x: op.join(root_dir, x))
-# Check if the image path exists
-for image_path in df["image"]:
-    if image_path not in files:
-        st.error(
-            f"Image path '{image_path}' not found in the zip file. This is a corrupted file."
-        )
-        st.stop()
-# Create a base64 data url column
-df["image"] = df["image"].apply(image_to_data_url)
-# Fill NaN with empty string on text column
-df["text"] = df["text"].fillna("")
+df = read_dataframe(zip_file, label_file)
 
 # Display DataFrame
 edited_df = st.data_editor(
