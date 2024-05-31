@@ -12,61 +12,17 @@ import streamlit as st
 st.set_page_config(page_title="Label Editor", page_icon=":pencil:")
 st.title("Label Editor")
 
-
-
 @st.cache_data
-def read_dataframe(_zip_file: zipfile.ZipFile, file_path: str) -> pd.DataFrame:
-    """Read a CSV or TSV file in a zip file."""
-    @st.cache_data
-    def image_to_data_url(_zip_file: zipfile.ZipFile, image_path: str) -> str:
-        """Open an image and convert to base64 data url."""
-        # Read image content in zip file.
-        with _zip_file.open(image_path) as image_file:
-            encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
-        # Get image path extension.
-        image_extension = image_path.split(".")[-1]
-        # Generate data url.
-        data_url = f"data:image/{image_extension};base64,{encoded_image}"
-        return data_url
-
-    # Get the file content from the zip file
-    with _zip_file.open(file_path) as f:
-        label_content = f.read()
-        label_bytes = io.BytesIO(label_content)
-
-    # Read label file
-    sep = "\t" if label_file.endswith(".tsv") else ","
-    df = pd.read_csv(label_bytes, sep=sep)
-
-    # Check if the file has a path and text column
-    if not {"path", "text"}.issubset(df.columns):
-        st.error(
-            "The file must have 'path' and 'text' columns, but got: "
-            + ", ".join(df.columns)
-        )
-        st.stop()
-
-    # Use commonpath as root.
-    root_dir = op.commonpath(files)
-
-    # Create a partial function to convert image to data url
-    image_to_data_url = partial(image_to_data_url, _zip_file)
-
-    # Create a temporary path column
-    df["image"] = df["path"].apply(lambda x: op.join(root_dir, x))
-    # Check if the image path exists
-    for image_path in df["image"]:
-        if image_path not in files:
-            st.error(
-                f"Image path '{image_path}' not found in the zip file. This is a corrupted file."
-            )
-            st.stop()
-    # Create a base64 data url column
-    df["image"] = df["image"].apply(image_to_data_url)
-    # Fill NaN with empty string on text column
-    df["text"] = df["text"].fillna("")
-    return df
-
+def image_to_data_url(_zip_file: zipfile.ZipFile, image_path: str) -> str:
+    """Open an image and convert to base64 data url."""
+    # Read image content in zip file.
+    with _zip_file.open(image_path) as image_file:
+        encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
+    # Get image path extension.
+    image_extension = image_path.split(".")[-1]
+    # Generate data url.
+    data_url = f"data:image/{image_extension};base64,{encoded_image}"
+    return data_url
 
 def check_password():
     """Returns `True` if the user had the correct password."""
@@ -123,7 +79,48 @@ else:
     # Use the first file
     label_file = label_files[0]
 
-df = read_dataframe(zip_file, label_file)
+if "df" not in st.session_state:
+
+    # Get the file content from the zip file
+    with zip_file.open(label_file) as f:
+        label_content = f.read()
+        label_bytes = io.BytesIO(label_content)
+
+    # Read label file
+    sep = "\t" if label_file.endswith(".tsv") else ","
+    df = pd.read_csv(label_bytes, sep=sep)
+
+    # Check if the file has a path and text column
+    if not {"path", "text"}.issubset(df.columns):
+        st.error(
+            "The file must have 'path' and 'text' columns, but got: "
+            + ", ".join(df.columns)
+        )
+        st.stop()
+
+    # Use commonpath as root.
+    root_dir = op.commonpath(files)
+
+    # Create a partial function to convert image to data url
+    image_to_data_url = partial(image_to_data_url, zip_file)
+
+    # Create a temporary path column
+    df["image"] = df["path"].apply(lambda x: op.join(root_dir, x))
+    # Check if the image path exists
+    for image_path in df["image"]:
+        if image_path not in files:
+            st.error(
+                f"Image path '{image_path}' not found in the zip file. This is a corrupted file."
+            )
+            st.stop()
+    # Create a base64 data url column
+    df["image"] = df["image"].apply(image_to_data_url)
+    # Fill NaN with empty string on text column
+    df["text"] = df["text"].fillna("")
+    # Save the DataFrame to session state
+    st.session_state["df"] = df
+else:
+    df = st.session_state["df"]
 
 # Find all batches in the df["path"] column
 # root_dir/batch_xx/image_xx.jpg
@@ -132,8 +129,13 @@ batches = df["path"].apply(lambda x: x.split("/")[1]).unique().tolist()
 # Add batch_xx selection
 batch = st.selectbox("Select a batch", batches)
 
-# Filter the DataFrame by batch
-batch_df = df[df["path"].str.contains(batch)]
+if "batch_df" not in st.session_state or st.session_state["current_batch"] != batch:
+    # Filter the DataFrame by batch
+    batch_df = df[df["path"].str.contains(batch)]
+    st.session_state["batch_df"] = batch_df
+    st.session_state["current_batch"] = batch
+else:
+    batch_df = st.session_state["batch_df"]
 
 # Display DataFrame
 edited_df = st.data_editor(
