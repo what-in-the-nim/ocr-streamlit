@@ -132,6 +132,7 @@ else:
 # Find all batches in the df["path"] column
 # batch_xx/image_xx.jpg
 batches = df["path"].apply(lambda x: x.split("/")[0]).unique().tolist()
+batches = sorted(batches)
 
 # Add batch_xx selection
 batch = st.selectbox("Select a batch", batches)
@@ -139,6 +140,9 @@ batch = st.selectbox("Select a batch", batches)
 if "batch_df" not in st.session_state or st.session_state["current_batch"] != batch:
     # Filter the DataFrame by batch
     batch_df = df[df["path"].str.contains(batch)]
+    # Sort by qc_confidence if exists
+    if "qc_confidence" in batch_df.columns:
+        batch_df = batch_df.sort_values("qc_confidence", ascending=False)
     st.session_state["batch_df"] = batch_df
     st.session_state["current_batch"] = batch
 else:
@@ -184,6 +188,9 @@ edited_df = st.data_editor(
 )
 # Remove the image column from the edited DataFrame
 edited_df.drop(columns=["image"], inplace=True)
+# Sort the DataFrame by qc_confidence if exists
+if "qc_confidence" in edited_df.columns:
+    edited_df = edited_df.reset_index()
 
 # Edited filename
 save_filename = f"{batch}_labels.tsv"
