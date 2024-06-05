@@ -24,6 +24,7 @@ def image_to_data_url(_zip_file: zipfile.ZipFile, image_path: str) -> str:
     data_url = f"data:image/{image_extension};base64,{encoded_image}"
     return data_url
 
+
 def check_password():
     """Returns `True` if the user had the correct password."""
 
@@ -117,14 +118,20 @@ if "df" not in st.session_state:
     df["image"] = df["image"].apply(image_to_data_url)
     # Fill NaN with empty string on text column
     df["text"] = df["text"].fillna("")
+    # Cast column qc_confidence to float if exists
+    if "qc_confidence" in df.columns:
+        df["qc_confidence"] = df["qc_confidence"].astype(float)
+    # Cast column qc_passed to bool if exists
+    if "qc_passed" in df.columns:
+        df["qc_passed"] = df["qc_passed"].astype(bool)
     # Save the DataFrame to session state
     st.session_state["df"] = df
 else:
     df = st.session_state["df"]
 
 # Find all batches in the df["path"] column
-# root_dir/batch_xx/image_xx.jpg
-batches = df["path"].apply(lambda x: x.split("/")[1]).unique().tolist()
+# batch_xx/image_xx.jpg
+batches = df["path"].apply(lambda x: x.split("/")[0]).unique().tolist()
 
 # Add batch_xx selection
 batch = st.selectbox("Select a batch", batches)
@@ -137,21 +144,43 @@ if "batch_df" not in st.session_state or st.session_state["current_batch"] != ba
 else:
     batch_df = st.session_state["batch_df"]
 
+# Column order for the DataFrame
+column_order = ["image", "text"]
+disabled_columns = ["image"]
+column_config = {
+    "image": st.column_config.ImageColumn(
+        width="medium", label="Image Preview", help="Image Preview"
+    ),
+    "text": st.column_config.TextColumn(label="Text", help="Label of the image."),
+}
+if "qc_passed" in batch_df.columns:
+    column_order.append("qc_passed")
+    disabled_columns.append("qc_passed")
+    column_config["qc_passed"] = st.column_config.CheckboxColumn(
+        label="QC Passed",
+        help="Quality Control Passed",
+    )
+if "qc_confidence" in batch_df.columns:
+    column_order.append("qc_confidence")
+    disabled_columns.append("qc_confidence")
+    column_config["qc_confidence"] = st.column_config.NumberColumn(
+        label="QC Confidence",
+        help="Quality Control Confidence",
+        min_value=0.0,
+        max_value=1.0,
+    )
+
+
 # Display DataFrame
 edited_df = st.data_editor(
     data=batch_df,
     use_container_width=True,
     num_rows="dynamic",
-    column_order=["image", "text"],
+    column_order=column_order,
     height=500,
-    disabled=("image",),
+    disabled=disabled_columns,
     hide_index=False,
-    column_config={
-        "image": st.column_config.ImageColumn(
-            width="medium", label="Image Preview", help="Image Preview"
-        ),
-        "text": st.column_config.TextColumn(label="Text", help="Label of the image."),
-    },
+    column_config=column_config,
 )
 # Remove the image column from the edited DataFrame
 edited_df.drop(columns=["image"], inplace=True)
