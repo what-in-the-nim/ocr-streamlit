@@ -132,7 +132,7 @@ else:
 # Find all batches in the df["path"] column
 # batch_xx/image_xx.jpg
 batches = df["path"].apply(lambda x: x.split("/")[0]).unique().tolist()
-batches = sorted(batches)
+batches = sorted(batches, key=lambda x: int(x.split("_")[1]))
 
 # Add batch_xx selection
 batch = st.selectbox("Select a batch", batches)
