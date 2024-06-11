@@ -162,7 +162,7 @@ batch = st.selectbox("Select a batch", batches)
 
 if "batch_df" not in st.session_state or st.session_state["current_batch"] != batch:
     # Filter the DataFrame by batch
-    batch_df = df[df["path"].str.contains(batch)]
+    batch_df = df[df["path"].str.contains(batch + "/")]
     # Sort by qc_confidence if exists
     if "qc_confidence" in batch_df.columns:
         batch_df = batch_df.sort_values("qc_confidence", ascending=True)
