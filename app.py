@@ -77,7 +77,7 @@ with st.expander("Example"):
 )
 
 # File upload
-file = st.file_uploader("Upload a CSV or TSV file", type=["zip"])
+file = st.file_uploader("Upload a zip file", type=["zip"])
 
 # If no file is uploaded, stop the script
 if file is None:
