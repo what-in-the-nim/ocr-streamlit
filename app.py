@@ -53,6 +53,29 @@ def check_password():
 if not check_password():
     st.stop()
 
+# Add example
+with st.expander("Example"):
+    st.write("Input zip file structure:")
+    st.code(
+    """
+    input.zip
+    ├── batch_01
+    │   ├── image_01.jpg
+    │   ├── image_02.jpg
+    │   └── ...
+    ├── batch_02
+    │   ├── image_01.jpg
+    │   ├── image_02.jpg
+    │   └── ...
+    ├── ...
+    ├── batch_xx
+    │   ├── image_01.jpg
+    │   ├── image_02.jpg
+    │   └── ...
+    └── labels.tsv
+    """
+)
+
 # File upload
 file = st.file_uploader("Upload a CSV or TSV file", type=["zip"])
 
