@@ -112,7 +112,7 @@ if "df" not in st.session_state:
 
     # Read label file
     sep = "\t" if label_file.endswith(".tsv") else ","
-    df = pd.read_csv(label_bytes, sep=sep)
+    df = pd.read_csv(label_bytes, sep=sep, quoting=3)
 
     # Check if the file has a path and text column
     if not {"path", "text"}.issubset(df.columns):
@@ -221,7 +221,7 @@ save_filename = f"{batch}_labels.tsv"
 # Download button
 st.download_button(
     label="Download Label",
-    data=edited_df.to_csv(sep="\t", index=False),
+    data=edited_df.to_csv(sep="\t", index=False, quoting=3),
     file_name=save_filename,
     mime="text/csv",
 )
