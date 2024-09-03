@@ -210,7 +210,7 @@ edited_df = st.data_editor(
     column_config=column_config,
 )
 # Remove the image column from the edited DataFrame
-edited_df.drop(columns=["image", "index"], inplace=True)
+edited_df.drop(columns=["image"], inplace=True)
 # Sort the DataFrame by qc_confidence if exists
 if "qc_confidence" in edited_df.columns:
     edited_df = edited_df.reset_index()
